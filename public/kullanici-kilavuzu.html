@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMAA Laboratuvar - Kullanıcı Kılavuzu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        
+        .header img {
+            max-width: 120px;
+            height: auto;
+            margin-bottom: 1rem;
+            filter: brightness(0) invert(1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 3rem 2rem;
+        }
+        
+        .section {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section h2 {
+            color: #1e40af;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #3b82f6;
+        }
+        
+        .section h3 {
+            color: #1e3a8a;
+            font-size: 1.4rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.8rem;
+        }
+        
+        .section ul, .section ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .section li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .highlight {
+            background: #fef3c7;
+            padding: 1.5rem;
+            border-left: 4px solid #f59e0b;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .tip {
+            background: #dbeafe;
+            padding: 1.5rem;
+            border-left: 4px solid #3b82f6;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .warning {
+            background: #fee2e2;
+            padding: 1.5rem;
+            border-left: 4px solid #ef4444;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .success {
+            background: #d1fae5;
+            padding: 1.5rem;
+            border-left: 4px solid #10b981;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid #e5e7eb;
+        }
+        
+        th {
+            background: #3b82f6;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .footer {
+            background: #1e3a8a;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .icon {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+            }
+            
+            .btn {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .content {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="/logo.png" alt="EMAA Logo">
+            <h1>📘 Kullanıcı Kılavuzu</h1>
+            <p>EMAA Laboratuvar Aylık Takip Sistemi</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2><span class="icon">🎯</span>Hoş Geldiniz!</h2>
+                <p>EMAA Laboratuvar Aylık Takip Sistemi, laboratuvar verilerinizi günlük olarak kaydetmenizi, geçmiş verilere erişmenizi ve raporlar oluşturmanızı sağlayan modern bir dijital platformdur.</p>
+                
+                <div class="highlight">
+                    <strong>⚡ Hızlı Başlangıç:</strong>
+                    <ol>
+                        <li>Giriş yapın</li>
+                        <li>Günlük verilerinizi tabloya girin</li>
+                        <li>"Kaydet" butonuna tıklayın</li>
+                        <li>İhtiyaç halinde Excel veya PDF indirin</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">🔐</span>1. Sisteme Giriş</h2>
+                
+                <h3>Giriş Yapma</h3>
+                <ol>
+                    <li>Web tarayıcınızda sistem adresini açın</li>
+                    <li>Kullanıcı adınızı yazın</li>
+                    <li>Şifrenizi girin</li>
+                    <li>"Giriş" butonuna tıklayın</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong>⚠️ Güvenlik Önlemleri:</strong>
+                    <ul>
+                        <li>10 yanlış denemeden sonra 15 dakika bekleme</li>
+                        <li>İlk girişte şifrenizi değiştirin</li>
+                        <li>Şifrenizi kimseyle paylaşmayın</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">🖥️</span>2. Ana Ekran</h2>
+                
+                <h3>Kontrol Paneli</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Öğe</th>
+                            <th>Açıklama</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Yıl Seçici</td>
+                            <td>Hangi yılı görüntülediğinizi belirler</td>
+                        </tr>
+                        <tr>
+                            <td>Ay Seçici</td>
+                            <td>Hangi ayı görüntülediğinizi belirler</td>
+                        </tr>
+                        <tr>
+                            <td>Kaydet</td>
+                            <td>Yaptığınız değişiklikleri kaydeder</td>
+                        </tr>
+                        <tr>
+                            <td>Yeni Ay Oluştur</td>
+                            <td>Henüz olmayan bir ay için sayfa açar</td>
+                        </tr>
+                        <tr>
+                            <td>Geçmiş</td>
+                            <td>Daha önce kaydedilmiş ayları listeler</td>
+                        </tr>
+                        <tr>
+                            <td>XLSX İndir</td>
+                            <td>Excel dosyası olarak indirir</td>
+                        </tr>
+                        <tr>
+                            <td>Yazdır/PDF</td>
+                            <td>Sayfayı yazdırır veya PDF kaydeder</td>
+                        </tr>
+                        <tr>
+                            <td>Çıkış</td>
+                            <td>Güvenli çıkış yapar</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>13 Laboratuvar Parametresi</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Parametre</th>
+                                <th>Birim</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>1</td><td>Sıcaklık</td><td>°C</td></tr>
+                            <tr><td>2</td><td>pH</td><td>-</td></tr>
+                            <tr><td>3</td><td>İletkenlik</td><td>µS/cm</td></tr>
+                            <tr><td>4</td><td>Bulanıklık</td><td>NTU</td></tr>
+                            <tr><td>5</td><td>Renk</td><td>Pt-Co</td></tr>
+                            <tr><td>6</td><td>Serbest Klor</td><td>mg/L</td></tr>
+                            <tr><td>7</td><td>Toplam Klor</td><td>mg/L</td></tr>
+                            <tr><td>8</td><td>Toplam Sertlik</td><td>°F</td></tr>
+                            <tr><td>9</td><td>Kalsiyum Sertliği</td><td>°F</td></tr>
+                            <tr><td>10</td><td>Magnezyum Sertliği</td><td>°F</td></tr>
+                            <tr><td>11</td><td>Demir</td><td>mg/L</td></tr>
+                            <tr><td>12</td><td>Mangan</td><td>mg/L</td></tr>
+                            <tr><td>13</td><td>Nitrit</td><td>mg/L</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">✍️</span>3. Veri Girişi</h2>
+                
+                <h3>Adım Adım Veri Girişi</h3>
+                <ol>
+                    <li><strong>Hücreyi seçin:</strong> Veri girmek istediğiniz hücreye tıklayın</li>
+                    <li><strong>Değeri yazın:</strong> Ölçüm değerini klavyeden yazın</li>
+                    <li><strong>Sonraki hücreye geçin:</strong> Tab (sağa), Enter (aşağı) veya fare ile</li>
+                </ol>
+                
+                <div class="tip">
+                    <strong>💡 Hızlı Veri Girişi İpuçları:</strong>
+                    <ul>
+                        <li><kbd>Tab</kbd> tuşu ile sağa doğru hızlıca ilerleyin</li>
+                        <li><kbd>Enter</kbd> tuşu ile aşağı doğru hızlıca ilerleyin</li>
+                        <li>Boş hücreleri atlayabilirsiniz</li>
+                        <li>Yanlış girişi düzeltmek için hücreye tekrar tıklayın</li>
+                    </ul>
+                </div>
+                
+                <h3>Örnek Kullanım Senaryosu</h3>
+                <div class="code">
+Tarih: 15 Ocak 2025
+Görev: O günün tüm parametrelerini kaydetmek
+
+1. "15" numaralı gün sütununu bulun
+2. İlk parametre (Sıcaklık) satırında 15. güne tıklayın
+3. Değeri yazın: "18.5"
+4. Enter tuşuna basarak aşağı inin
+5. pH değerini yazın: "7.4"
+6. Bu şekilde 13 parametreyi de tamamlayın
+7. "Kaydet" butonuna tıklayın
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">💾</span>4. Kaydetme</h2>
+                
+                <div class="warning">
+                    <strong>🚨 ÖNEMLİ:</strong> Sistem otomatik kaydetme yapmaz! Verilerinizi girdikten sonra mutlaka "Kaydet" butonuna basın.
+                </div>
+                
+                <h3>Kaydetme Adımları</h3>
+                <ol>
+                    <li>Verilerinizi girdikten sonra</li>
+                    <li>Üst menüde "Kaydet" butonuna tıklayın</li>
+                    <li>"Kaydedildi!" mesajını bekleyin</li>
+                    <li>Başarılı olduğunu doğrulayın</li>
+                </ol>
+                
+                <div class="success">
+                    <strong>✅ Başarılı Kaydetme Kontrol Listesi:</strong>
+                    <ul>
+                        <li>Tüm gerekli verileri girdim</li>
+                        <li>Değerleri kontrol ettim</li>
+                        <li>"Kaydet" butonuna tıkladım</li>
+                        <li>"Kaydedildi!" mesajını gördüm</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">📥</span>5. Excel İndirme</h2>
+                
+                <h3>XLSX Dosyası Oluşturma</h3>
+                <ol>
+                    <li>"XLSX İndir" butonuna tıklayın</li>
+                    <li>Dosya otomatik olarak indirilir</li>
+                    <li>İndirilenler klasöründe bulun</li>
+                    <li>Excel ile açın</li>
+                </ol>
+                
+                <div class="tip">
+                    <strong>💼 Profesyonel Kullanım:</strong>
+                    <ul>
+                        <li>E-posta ile raporlama</li>
+                        <li>Arşivleme ve yedekleme</li>
+                        <li>İleri analiz ve grafik</li>
+                        <li>Dış yazıcıdan çıktı</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">🖨️</span>6. Yazdırma ve PDF</h2>
+                
+                <h3>PDF Olarak Kaydetme</h3>
+                <ol>
+                    <li>"Yazdır/PDF" butonuna tıklayın</li>
+                    <li>Yazdırma penceresinde "PDF olarak kaydet" seçin</li>
+                    <li>"Yatay (Landscape)" düzenini seçin</li>
+                    <li>"Sayfaya sığdır" seçeneğini aktifleştirin</li>
+                    <li>Dosya adı verin ve kaydedin</li>
+                </ol>
+                
+                <div class="highlight">
+                    <strong>🎨 Yazdırma Özellikleri:</strong>
+                    <ul>
+                        <li>Logo ve başlık büyük ve net</li>
+                        <li>Kontrol butonları gizlenir</li>
+                        <li>Tablo çizgileri kalın ve profesyonel</li>
+                        <li>Otomatik ölçekleme</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">🔑</span>7. Şifre Değiştirme</h2>
+                
+                <h3>Şifre Değiştirme Adımları</h3>
+                <ol>
+                    <li>Giriş ekranında "Şifre Değiştir" butonuna tıklayın</li>
+                    <li>Eski şifrenizi yazın</li>
+                    <li>Yeni şifrenizi yazın (en az 6 karakter)</li>
+                    <li>"Değiştir" butonuna tıklayın</li>
+                    <li>Başarılı mesajını görün</li>
+                </ol>
+                
+                <div class="tip">
+                    <strong>🔐 Güvenli Şifre Önerileri:</strong>
+                    <ul>
+                        <li>En az 8-10 karakter</li>
+                        <li>Büyük harf, küçük harf, rakam karışımı</li>
+                        <li>Tahmin edilemez kombinasyonlar</li>
+                        <li>Doğum tarihi kullanmayın</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">❓</span>8. Sık Sorulan Sorular</h2>
+                
+                <h3>S: Verilerimi kaydettim ama kayboldu?</h3>
+                <p><strong>C:</strong> Kaydet butonuna basmadan başka sayfaya geçmiş veya internet bağlantınız kesilmiş olabilir. Her veri girişinden sonra mutlaka "Kaydet" butonuna basın.</p>
+                
+                <h3>S: Geçen ayın verilerini düzenleyebilir miyim?</h3>
+                <p><strong>C:</strong> Evet! Geçmiş butonundan veya Ay seçiciden o aya gidin, düzenleyin ve kaydedin.</p>
+                
+                <h3>S: Şifremi unuttum, ne yapmalıyım?</h3>
+                <p><strong>C:</strong> Sistem yöneticinize başvurun. Yönetici şifrenizi sıfırlayabilir.</p>
+                
+                <h3>S: İki kişi aynı anda düzenleyebilir mi?</h3>
+                <p><strong>C:</strong> Evet, ancak son kaydeden kazanır. Ekip çalışmasında koordinasyon önemlidir.</p>
+                
+                <h3>S: Telefondan kullanabilir miyim?</h3>
+                <p><strong>C:</strong> Evet, ancak masaüstü görünüm önerilir. Mobil cihazlarda veri girişi zor olabilir.</p>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">💡</span>9. İpuçları ve Püf Noktaları</h2>
+                
+                <h3>⚡ Hızlı Veri Girişi</h3>
+                <ul>
+                    <li><strong>Klavye kısayolları:</strong> Tab (sağa), Enter (aşağı), Shift+Tab (sola)</li>
+                    <li><strong>Günlük rutin:</strong> Her gün aynı saatte veri girin</li>
+                    <li><strong>Çift ekran:</strong> Bir ekranda sistem, diğerinde notlar</li>
+                </ul>
+                
+                <h3>📊 Veri Kalitesi</h3>
+                <ul>
+                    <li><strong>Tutarlı format:</strong> Her zaman aynı ondalık ayracı kullanın</li>
+                    <li><strong>Çift kontrol:</strong> Veri girişi sonrası gözden geçirin</li>
+                    <li><strong>Not alma:</strong> Anormal değerlerde açıklama yapın</li>
+                </ul>
+                
+                <h3>🎯 Verimlilik</h3>
+                <ul>
+                    <li><strong>Haftalık yedekleme:</strong> Her Cuma XLSX indirin</li>
+                    <li><strong>Aylık raporlama:</strong> Ay sonunda PDF oluşturun</li>
+                    <li><strong>Tarayıcı yer imi:</strong> Hızlı erişim için favorilere ekleyin</li>
+                </ul>
+                
+                <div class="highlight">
+                    <strong>🌟 Profesyonel İpucu:</strong> Arşivleme için klasör yapısı oluşturun:
+                    <div class="code">
+Laboratuvar_Raporları/
+  └─ 2025/
+      ├─ Ocak/
+      │   ├─ 2025-01-31_Ocak.xlsx
+      │   └─ 2025-01-31_Ocak.pdf
+      ├─ Şubat/
+      └─ ...
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><span class="icon">✅</span>10. Başlangıç Kontrol Listesi</h2>
+                
+                <div class="success">
+                    <strong>Sistemi ilk kez kullanmaya başlarken:</strong>
+                    <ul>
+                        <li>✓ Giriş bilgilerinizi aldınız</li>
+                        <li>✓ İlk girişi yaptınız</li>
+                        <li>✓ Şifrenizi değiştirdiniz</li>
+                        <li>✓ Ana ekranı tanıdınız</li>
+                        <li>✓ İlk veri girişinizi yaptınız</li>
+                        <li>✓ Kaydetme işlemini test ettiniz</li>
+                        <li>✓ XLSX indirmeyi denediniz</li>
+                        <li>✓ Yazdırma/PDF özelliğini test ettiniz</li>
+                        <li>✓ Bu kılavuzu okuduğunuz</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <h3>🎓 Sonuç</h3>
+            <p>EMAA Laboratuvar Aylık Takip Sistemi ile verilerinizi güvenle yönetin!</p>
+            <p style="margin-top: 1rem;">
+                <a href="/" class="btn">🏠 Ana Sayfaya Dön</a>
+                <a href="#" onclick="window.print(); return false;" class="btn">🖨️ Kılavuzu Yazdır</a>
+            </p>
+            <p style="margin-top: 2rem; opacity: 0.8; font-size: 0.9rem;">
+                Son güncelleme: Ocak 2025 | Versiyon: 1.0 | EMAA Laboratuvar Sistemi
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seed Test</title>
+</head>
+<body>
+    <h1>Seed Testi</h1>
+    <button onclick="runSeed()">Seed Çalıştır</button>
+    <pre id="result"></pre>
+    
+    <script>
+        async function runSeed() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Çalıştırılıyor...';
+            
+            try {
+                const response = await fetch('/api/seed', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultEl.textContent = 'Hata: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

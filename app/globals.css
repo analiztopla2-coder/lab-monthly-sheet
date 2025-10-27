@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Print Stilleri */
+@media print {
+  @page {
+    margin: 1cm;
+    size: A4 landscape;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Butonları ve kontrolleri gizle */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Tablo başlıklarını her sayfada göster */
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Sticky pozisyonları print'te kaldır */
+  th,
+  td {
+    position: static !important;
+  }
+
+  /* Tablo sınırlarını güçlendir */
+  table,
+  th,
+  td {
+    border: 1px solid #000 !important;
+  }
+
+  th {
+    background-color: #e2e8f0 !important;
+    font-weight: bold !important;
+  }
+
+  /* ContentEditable alanlarını düz metin gibi göster */
+  [contenteditable] {
+    border: none !important;
+    outline: none !important;
+  }
+}
+
+/* Responsive - Mobil için scroll */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  table {
+    font-size: 0.75rem;
+  }
+
+  th,
+  td {
+    min-width: 40px !important;
+    padding: 0.25rem !important;
+  }
+}
