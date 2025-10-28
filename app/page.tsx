@@ -82,7 +82,10 @@ export default function DashboardPage() {
       if (!newRows[rowLabel]) {
         newRows[rowLabel] = Array(days).fill("");
       }
-      newRows[rowLabel][dayIndex] = value;
+      // Yeni array oluştur (immutable update)
+      const updatedRow = [...(newRows[rowLabel] || [])];
+      updatedRow[dayIndex] = value;
+      newRows[rowLabel] = updatedRow;
       return newRows;
     });
   };
