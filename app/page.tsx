@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import MonthTable from "./components/MonthTable";
 import { Button } from "./components/ui/button";
 import { Select } from "./components/ui/select";
+import { Input } from "./components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./components/ui/dialog";
 import { ROW_LABELS, RowsJson, getDaysInMonth } from "@/lib/rows";
 import * as XLSX from "xlsx";
@@ -28,6 +29,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [username, setUsername] = useState("");
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   
   // Geçmiş modal
   const [showHistory, setShowHistory] = useState(false);
@@ -62,13 +68,14 @@ export default function DashboardPage() {
     loadSheet(currentYear, currentMonth);
   }, [currentYear, currentMonth]);
 
-  // Kullanıcı rolünü kontrol et
+  // Kullanıcı rolünü kontrol et ve kullanıcı adını al
   const checkUserRole = async () => {
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
         const data = await res.json();
         setIsAdmin(data.user.role === "admin");
+        setUsername(data.user.username);
       }
     } catch (error) {
       console.error("Role check error:", error);
@@ -150,6 +157,46 @@ export default function DashboardPage() {
       }
     } catch (error) {
       alert("Geçmiş yüklenemedi");
+    }
+  };
+
+  // Şifre değiştir
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      alert("Lütfen tüm alanları doldurun");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("Yeni şifreler eşleşmiyor");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert("Şifre en az 6 karakter olmalı");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Şifre başarıyla değiştirildi");
+        setShowChangePasswordModal(false);
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        alert(data.error || "Şifre değiştirilemedi");
+      }
+    } catch (error) {
+      alert("Sunucu hatası");
     }
   };
 
@@ -307,6 +354,20 @@ export default function DashboardPage() {
               </Button>
             )}
 
+            {username && (
+              <span className="text-sm font-medium text-slate-700">
+                Kullanıcı: {username}
+              </span>
+            )}
+
+            <Button 
+              onClick={() => setShowChangePasswordModal(true)} 
+              variant="outline" 
+              size="sm"
+            >
+              Şifre Değiştir
+            </Button>
+
             <Button onClick={handleLogout} variant="destructive" size="sm">
               Çıkış
             </Button>
@@ -354,6 +415,60 @@ export default function DashboardPage() {
                 ))}
               </ul>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Şifre Değiştir Modal */}
+      <Dialog open={showChangePasswordModal} onOpenChange={setShowChangePasswordModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Şifre Değiştir</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Eski Şifre</label>
+              <Input
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                placeholder="Eski şifrenizi girin"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Yeni Şifre</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Yeni şifrenizi girin"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Yeni Şifre (Tekrar)</label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Yeni şifrenizi tekrar girin"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button 
+                onClick={() => {
+                  setShowChangePasswordModal(false);
+                  setOldPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }} 
+                variant="outline"
+              >
+                İptal
+              </Button>
+              <Button onClick={handleChangePassword}>
+                Değiştir
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
