@@ -29,7 +29,7 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
                 onMouseEnter={() => setHoveredCol(day - 1)}
                 onMouseLeave={() => setHoveredCol(null)}
                 className={`
-                  sticky top-0 z-10 text-white p-2.5 min-w-[56px] font-semibold text-sm
+                  sticky top-0 z-10 text-white p-2.5 min-w-[90px] w-[90px] font-semibold text-sm
                   border-2 border-slate-600
                   ${day % 5 === 0 ? 'bg-indigo-600' : 'bg-slate-600'}
                   ${hoveredCol === day - 1 ? 'bg-blue-500 shadow-lg' : ''}
@@ -128,9 +128,9 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
                     data-row={rowIndex}
                     data-col={dayIndex}
                     className={`
-                      w-full min-h-[44px] px-3 py-2.5 
+                      w-full min-h-[44px] px-2 py-2.5 
                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-amber-50
-                      bg-transparent font-medium text-sm
+                      bg-transparent font-medium text-sm text-center
                       border-0
                     `}
                   />
