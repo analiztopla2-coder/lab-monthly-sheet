@@ -17,7 +17,7 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
 
   return (
     <div className="overflow-auto print:overflow-visible">
-      <table className="w-full border-collapse" role="grid">
+      <table className="w-full border-collapse" role="grid" style={{ tableLayout: 'auto' }}>
         <thead>
           <tr>
             <th className="sticky left-0 top-0 z-20 bg-slate-700 text-white border-2 border-slate-600 p-3 min-w-[200px] font-bold text-sm">
@@ -29,7 +29,7 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
                 onMouseEnter={() => setHoveredCol(day - 1)}
                 onMouseLeave={() => setHoveredCol(null)}
                 className={`
-                  sticky top-0 z-10 text-white p-2.5 min-w-[90px] w-[90px] font-semibold text-sm
+                  sticky top-0 z-10 text-white p-2.5 min-w-[70px] max-w-[200px] w-auto font-semibold text-sm
                   border-2 border-slate-600
                   ${day % 5 === 0 ? 'bg-indigo-600' : 'bg-slate-600'}
                   ${hoveredCol === day - 1 ? 'bg-blue-500 shadow-lg' : ''}
@@ -133,6 +133,7 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
                       bg-transparent font-medium text-sm text-center
                       border-0
                     `}
+                    style={{ minWidth: '70px' }}
                   />
                 </td>
               ))}
