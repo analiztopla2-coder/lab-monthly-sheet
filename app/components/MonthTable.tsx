@@ -77,6 +77,7 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
                 >
                   <input
                     type="text"
+                    inputMode="decimal"
                     value={rows[label]?.[dayIndex] || ""}
                     onChange={(e) => {
                       onChange(label, dayIndex, e.target.value);
