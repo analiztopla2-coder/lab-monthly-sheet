@@ -59,8 +59,40 @@ export async function GET(request: NextRequest) {
 
       if (insertError) throw insertError;
 
+      // Activity log - sheet oluşturma
+      const { logActivity } = await import("@/lib/activity-logger");
+      const ipAddress = request.headers.get("x-forwarded-for") || 
+                       request.headers.get("x-real-ip") || 
+                       "unknown";
+      const userAgent = request.headers.get("user-agent") || "unknown";
+      
+      await logActivity({
+        userId: payload.userId,
+        username: payload.username,
+        action: "sheet_created",
+        details: `${year}/${month + 1} ayı oluşturuldu`,
+        ipAddress,
+        userAgent,
+      });
+
       return NextResponse.json({ sheet: newSheet }, { status: 200 });
     }
+
+    // Activity log - sheet görüntüleme
+    const { logActivity } = await import("@/lib/activity-logger");
+    const ipAddress = request.headers.get("x-forwarded-for") || 
+                     request.headers.get("x-real-ip") || 
+                     "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    
+    await logActivity({
+      userId: payload.userId,
+      username: payload.username,
+      action: "sheet_viewed",
+      details: `${year}/${month + 1} ayı görüntülendi`,
+      ipAddress,
+      userAgent,
+    });
 
     return NextResponse.json({ sheet }, { status: 200 });
   } catch (error) {
@@ -123,6 +155,22 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) throw insertError;
+
+    // Activity log - POST ile sheet oluşturma
+    const { logActivity } = await import("@/lib/activity-logger");
+    const ipAddress = request.headers.get("x-forwarded-for") || 
+                     request.headers.get("x-real-ip") || 
+                     "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    
+    await logActivity({
+      userId: payload.userId,
+      username: payload.username,
+      action: "sheet_created",
+      details: `${year}/${month + 1} ayı manuel olarak oluşturuldu`,
+      ipAddress,
+      userAgent,
+    });
 
     return NextResponse.json({ sheet: newSheet }, { status: 201 });
   } catch (error) {
