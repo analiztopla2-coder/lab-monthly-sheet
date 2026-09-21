@@ -1,7 +1,7 @@
 // app/api/sheet/route.ts - Sheet CRUD (GET, POST)
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { emptyMonth, getDaysInMonth } from "@/lib/rows";
 
 /**
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Sheet'i bul
-    const { data: sheet, error } = await supabaseServer
+    const { data: sheet, error } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .select("*")
       .eq("year", year)
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       const days = getDaysInMonth(year, month);
       const rows = emptyMonth(days);
 
-      const { data: newSheet, error: insertError } = await supabaseServer
+      const { data: newSheet, error: insertError } = await getSupabaseAdmin()
         .from("monthly_sheets")
         .insert({
           year,
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Zaten var mı kontrol et
-    const { data: existing } = await supabaseServer
+    const { data: existing } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .select("*")
       .eq("year", year)
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
     const days = getDaysInMonth(year, month);
     const rows = emptyMonth(days);
 
-    const { data: newSheet, error: insertError } = await supabaseServer
+    const { data: newSheet, error: insertError } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .insert({
         year,

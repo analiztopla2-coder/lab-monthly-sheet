@@ -1,7 +1,7 @@
 // lib/auth.ts - JWT kimlik doğrulama yardımcı fonksiyonları
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
-import { supabaseServer } from "./supabase-server";
+import { getSupabaseAdmin } from "./supabase-server";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.APP_JWT_SECRET || "lab_monthly_sheet_super_secret_jwt_key_2025_change_me_in_production"
@@ -58,7 +58,7 @@ export async function comparePassword(
  * Kullanıcı adına göre kullanıcı bulur
  */
 export async function findUserByUsername(username: string) {
-  const { data, error } = await supabaseServer
+  const { data, error } = await getSupabaseAdmin()
     .from("app_users")
     .select("*")
     .eq("username", username)
@@ -77,7 +77,7 @@ export async function createUser(
   role = "user"
 ) {
   const passHash = await hashPassword(password);
-  const { data, error } = await supabaseServer
+  const { data, error } = await getSupabaseAdmin()
     .from("app_users")
     .insert({ username, pass_hash: passHash, role })
     .select()
@@ -92,7 +92,7 @@ export async function createUser(
  */
 export async function updateUserPassword(userId: string, newPassword: string) {
   const passHash = await hashPassword(newPassword);
-  const { error } = await supabaseServer
+  const { error } = await getSupabaseAdmin()
     .from("app_users")
     .update({ pass_hash: passHash })
     .eq("id", userId);

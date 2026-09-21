@@ -1,7 +1,7 @@
 // app/api/admin/logs/route.ts - Aktivite loglarını getir (sadece admin)
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
     const action = searchParams.get("action"); // Belirli bir action filtreleme
 
-    let query = supabaseServer
+    let query = getSupabaseAdmin()
       .from("user_activity_logs")
       .select("*")
       .order("created_at", { ascending: false })
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Toplam log sayısı
-    let countQuery = supabaseServer
+    let countQuery = getSupabaseAdmin()
       .from("user_activity_logs")
       .select("*", { count: "exact", head: true });
 

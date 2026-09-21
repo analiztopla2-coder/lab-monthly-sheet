@@ -1,7 +1,7 @@
 // app/api/sheets/route.ts - Tüm sheet'leri listele
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 
 /**
  * GET /api/sheets
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Geçersiz oturum" }, { status: 401 });
     }
 
-    const { data: sheets, error } = await supabaseServer
+    const { data: sheets, error } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .select("id, year, month, updated_at")
       .order("year", { ascending: false })

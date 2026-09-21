@@ -1,7 +1,7 @@
 // app/api/sheet/[id]/route.ts - Sheet güncelleme (PUT)
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 
 /**
  * PUT /api/sheet/:id
@@ -30,7 +30,7 @@ export async function PUT(
     }
 
     // Eski sheet'i al (karşılaştırma için)
-    const { data: oldSheet, error: fetchError } = await supabaseServer
+    const { data: oldSheet, error: fetchError } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .select("*")
       .eq("id", params.id)
@@ -42,7 +42,7 @@ export async function PUT(
     const changes = detectChanges(oldSheet.rows, rows);
 
     // Sheet'i güncelle
-    const { data: updated, error } = await supabaseServer
+    const { data: updated, error } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .update({
         rows,

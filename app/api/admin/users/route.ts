@@ -1,7 +1,7 @@
 // app/api/admin/users/route.ts - Kullanıcı listeleme ve ekleme
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, hashPassword } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { logActivity } from "@/lib/activity-logger";
 import { cookies } from "next/headers";
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: users, error } = await supabaseServer
+    const { data: users, error } = await getSupabaseAdmin()
       .from("app_users")
       .select("id, username, role, created_at")
       .order("created_at", { ascending: false });
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Kullanıcı adı kontrolü
-    const { data: existingUser } = await supabaseServer
+    const { data: existingUser } = await getSupabaseAdmin()
       .from("app_users")
       .select("id")
       .eq("username", username)
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     const passHash = await hashPassword(password);
 
     // Kullanıcıyı ekle
-    const { data: newUser, error: insertError } = await supabaseServer
+    const { data: newUser, error: insertError } = await getSupabaseAdmin()
       .from("app_users")
       .insert([
         {

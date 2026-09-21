@@ -1,7 +1,7 @@
 // app/api/admin/users/[id]/route.ts - Kullanıcı silme ve güncelleme
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, hashPassword } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { logActivity } from "@/lib/activity-logger";
 import { cookies } from "next/headers";
 
@@ -59,7 +59,7 @@ export async function PATCH(
     }
 
     // Mevcut kullanıcı bilgilerini al
-    const { data: existingUser } = await supabaseServer
+    const { data: existingUser } = await getSupabaseAdmin()
       .from("app_users")
       .select("username, role")
       .eq("id", id)
@@ -87,7 +87,7 @@ export async function PATCH(
     }
 
     // Güncelleme yap
-    const { error } = await supabaseServer
+    const { error } = await getSupabaseAdmin()
       .from("app_users")
       .update(updateData)
       .eq("id", id);
@@ -160,13 +160,13 @@ export async function DELETE(
     }
 
     // Silinecek kullanıcının bilgilerini al
-    const { data: userToDelete } = await supabaseServer
+    const { data: userToDelete } = await getSupabaseAdmin()
       .from("app_users")
       .select("username, role")
       .eq("id", id)
       .single();
 
-    const { error } = await supabaseServer
+    const { error } = await getSupabaseAdmin()
       .from("app_users")
       .delete()
       .eq("id", id);

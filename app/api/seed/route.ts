@@ -1,7 +1,7 @@
 // app/api/seed/route.ts - Seed endpoint (dev only)
 import { NextResponse } from "next/server";
 import { createUser, findUserByUsername } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { emptyMonth } from "@/lib/rows";
 
 export async function POST() {
@@ -35,7 +35,7 @@ export async function POST() {
     const year = now.getFullYear();
     const month = now.getMonth(); // 0-11
 
-    const { data: existingSheet } = await supabaseServer
+    const { data: existingSheet } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .select("*")
       .eq("year", year)
@@ -48,7 +48,7 @@ export async function POST() {
 
       const admin = await findUserByUsername(defaultAdmin);
       
-      await supabaseServer.from("monthly_sheets").insert({
+      await getSupabaseAdmin().from("monthly_sheets").insert({
         year,
         month,
         rows,

@@ -35,10 +35,10 @@ export async function logActivity({
   userAgent,
 }: LogActivityParams): Promise<void> {
   // Bu fonksiyon sadece server-side'da import edilmeli
-  // Import supabaseServer'ı dinamik yapıyoruz
+  // Lazy-load admin client (no env validation at import/build time)
   try {
-    const { supabaseServer } = await import("./supabase-server");
-    await supabaseServer.from("user_activity_logs").insert([
+    const { getSupabaseAdmin } = await import("./supabase-server");
+    await getSupabaseAdmin().from("user_activity_logs").insert([
       {
         user_id: userId || null,
         username,

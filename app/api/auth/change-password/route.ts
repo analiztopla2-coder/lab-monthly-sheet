@@ -1,7 +1,7 @@
 // app/api/auth/change-password/route.ts - Şifre değiştirme endpoint
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, comparePassword, updateUserPassword } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Kullanıcıyı getir
-    const { data: user, error: userError } = await supabaseServer
+    const { data: user, error: userError } = await getSupabaseAdmin()
       .from("app_users")
       .select("*")
       .eq("id", payload.userId)
