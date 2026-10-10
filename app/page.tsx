@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [parameterActionLoading, setParameterActionLoading] = useState(false);
   const [parameterActionError, setParameterActionError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<LabParameter | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const monthNames = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -56,18 +57,35 @@ export default function DashboardPage() {
   // Sheet yükle
   const loadSheet = async (year: number, month: number) => {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await fetch(`/api/sheet?year=${year}&month=${month}`);
       const data = await res.json();
 
-      if (res.ok && data.sheet) {
-        setSheet(data.sheet);
-        setRows(data.sheet.rows);
-        setParameters(data.parameters || []);
-        setDays(getDaysInMonth(year, month));
+      if (!res.ok) {
+        setLoadError(data.error || "Sayfa yüklenemedi");
+        return;
       }
+
+      if (!data.sheet) {
+        setLoadError("Sheet verisi alınamadı");
+        return;
+      }
+
+      const params = (data.parameters || []) as LabParameter[];
+      if (params.length === 0) {
+        setLoadError(
+          "Parametre listesi boş. Kayıtlı veriler gösterilemiyor; kaydetmeyin."
+        );
+      }
+
+      setSheet(data.sheet);
+      setRows(data.sheet.rows);
+      setParameters(params);
+      setDays(getDaysInMonth(year, month));
     } catch (error) {
       console.error("Sheet yükleme hatası:", error);
+      setLoadError("Bağlantı hatası — sayfa yeniden yüklenebilir.");
     } finally {
       setLoading(false);
     }
@@ -180,6 +198,12 @@ export default function DashboardPage() {
   // Kaydet
   const handleSave = async () => {
     if (!sheet) return;
+    if (parameters.length === 0) {
+      alert(
+        "Parametre listesi yüklenemedi. Veri güvenliği nedeniyle kayıt engellendi."
+      );
+      return;
+    }
     setSaving(true);
 
     try {
@@ -203,6 +227,12 @@ export default function DashboardPage() {
 
   // Yeni ay oluştur
   const handleCreateNewMonth = async () => {
+    if (parameters.length === 0) {
+      alert(
+        "Parametre listesi yüklenemedi. Veri güvenliği nedeniyle işlem durduruldu."
+      );
+      return;
+    }
     const confirmText = `${currentYear} / ${monthNames[currentMonth]} için yeni bir sayfa oluşturulsun mu?`;
     if (!confirm(confirmText)) return;
 
@@ -474,6 +504,14 @@ export default function DashboardPage() {
 
       {/* Tablo */}
       <main className="container mx-auto px-4 py-6 print:px-0 print:py-2">
+        {loadError && (
+          <div
+            className="mb-4 rounded-md border border-red-300 bg-red-50 text-red-800 px-4 py-3 text-sm print:hidden"
+            role="alert"
+          >
+            {loadError}
+          </div>
+        )}
         <MonthTable
           parameters={parameters}
           rows={rows}

@@ -1,18 +1,19 @@
 import { getSupabaseAdmin } from "./supabase-server";
 import { getDaysInMonth, type RowsJson } from "./rows";
-import type { LabParameter } from "./parameter-types";
+import type { LabParameter, LabParameterRow } from "./parameter-types";
+import {
+  ephemeralLegacyFromSheetName,
+  findLegacyByName,
+  getLegacyParameterRowsForMonth,
+} from "./legacy-parameters";
+import {
+  isParameterEffectiveForMonth,
+  monthEndDate,
+  monthStartDate,
+  normalizeParameterName,
+} from "./month-period";
 
-export type { LabParameter } from "./parameter-types";
-
-export interface LabParameterRow {
-  id: string;
-  name: string;
-  name_normalized: string;
-  sort_order: number;
-  effective_from: string;
-  effective_to: string | null;
-  deleted_at: string | null;
-}
+export type { LabParameter, LabParameterRow } from "./parameter-types";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -21,25 +22,7 @@ export function isParameterIdKey(key: string): boolean {
   return UUID_RE.test(key);
 }
 
-export function normalizeParameterName(name: string): string {
-  return name.trim().toLocaleLowerCase("tr-TR");
-}
-
-/** First calendar day of month (JS month 0–11) as YYYY-MM-DD */
-export function monthStartDate(year: number, month: number): string {
-  const y = year;
-  const m = String(month + 1).padStart(2, "0");
-  return `${y}-${m}-01`;
-}
-
-/** Last calendar day of month (JS month 0–11) as YYYY-MM-DD */
-export function monthEndDate(year: number, month: number): string {
-  const days = getDaysInMonth(year, month);
-  const y = year;
-  const m = String(month + 1).padStart(2, "0");
-  const d = String(days).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+export { normalizeParameterName, monthStartDate, monthEndDate } from "./month-period";
 
 export function toApiParameter(row: {
   id: string;
@@ -53,14 +36,31 @@ export function toApiParameter(row: {
   };
 }
 
+function isMissingParametersTable(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === "PGRST205" ||
+    (error?.message?.includes("lab_parameters") ?? false)
+  );
+}
+
+function filterRowsByMonth(
+  rows: LabParameterRow[],
+  year: number,
+  month: number
+): LabParameterRow[] {
+  return rows.filter((p) =>
+    isParameterEffectiveForMonth(p.effective_from, p.effective_to, year, month)
+  );
+}
+
 /**
  * Parameters effective for a given year/month (historical view).
+ * Falls back to legacy registry if lab_parameters is missing or empty.
  */
 export async function fetchParametersEffectiveForMonth(
   year: number,
   month: number
 ): Promise<LabParameterRow[]> {
-  const periodStart = monthStartDate(year, month);
   const periodEnd = monthEndDate(year, month);
 
   const { data, error } = await getSupabaseAdmin()
@@ -69,12 +69,23 @@ export async function fetchParametersEffectiveForMonth(
       "id, name, name_normalized, sort_order, effective_from, effective_to, deleted_at"
     )
     .lte("effective_from", periodEnd)
-    .or(`effective_to.is.null,effective_to.gt.${periodStart}`)
     .is("deleted_at", null)
     .order("sort_order", { ascending: true });
 
-  if (error) throw error;
-  return (data || []) as LabParameterRow[];
+  if (error) {
+    if (isMissingParametersTable(error)) {
+      return getLegacyParameterRowsForMonth(year, month);
+    }
+    throw error;
+  }
+
+  const filtered = filterRowsByMonth((data || []) as LabParameterRow[], year, month);
+
+  if (filtered.length === 0) {
+    return getLegacyParameterRowsForMonth(year, month);
+  }
+
+  return filtered;
 }
 
 export async function fetchParametersByIds(
@@ -90,13 +101,22 @@ export async function fetchParametersByIds(
     .in("id", ids)
     .order("sort_order", { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    if (isMissingParametersTable(error)) {
+      return ids
+        .map((id) => {
+          const legacy = getLegacyParameterRowsForMonth(2000, 0).find((p) => p.id === id);
+          return legacy;
+        })
+        .filter(Boolean) as LabParameterRow[];
+    }
+    throw error;
+  }
   return (data || []) as LabParameterRow[];
 }
 
 /**
- * Union of month-effective parameters and any parameter IDs stored on the sheet
- * (preserves historical rows after deactivation).
+ * Union of month-effective parameters, sheet row keys (legacy names + UUIDs).
  */
 export async function resolveParametersForSheet(
   year: number,
@@ -106,10 +126,30 @@ export async function resolveParametersForSheet(
   const effective = await fetchParametersEffectiveForMonth(year, month);
   const byId = new Map(effective.map((p) => [p.id, p]));
 
+  for (const key of Object.keys(sheetRows || {})) {
+    if (isParameterIdKey(key)) {
+      if (!byId.has(key)) {
+        const fromDb = await fetchParametersByIds([key]);
+        if (fromDb[0]) byId.set(key, fromDb[0]);
+      }
+      continue;
+    }
+    const legacy = findLegacyByName(key);
+    if (legacy) {
+      if (!byId.has(legacy.id)) {
+        byId.set(legacy.id, ephemeralLegacyFromSheetName(key, legacy.sortOrder));
+      }
+      continue;
+    }
+    const ephemeral = ephemeralLegacyFromSheetName(key, 9000 + byId.size);
+    if (!byId.has(ephemeral.id)) {
+      byId.set(ephemeral.id, ephemeral);
+    }
+  }
+
   const extraIds = Object.keys(sheetRows || {}).filter(
     (key) => isParameterIdKey(key) && !byId.has(key)
   );
-
   if (extraIds.length > 0) {
     const extras = await fetchParametersByIds(extraIds);
     for (const p of extras) {
@@ -133,25 +173,6 @@ export function buildEmptyRows(
   return rows;
 }
 
-/**
- * Ensures each visible parameter has a day array; preserves extra keys in stored JSON.
- */
-export function mergeRowsForParameters(
-  stored: RowsJson,
-  parameters: LabParameter[],
-  days: number
-): RowsJson {
-  const merged: RowsJson = { ...(stored || {}) };
-
-  for (const param of parameters) {
-    const existing = merged[param.id] || [];
-    const next = Array.from({ length: days }, (_, i) => existing[i] ?? "");
-    merged[param.id] = next;
-  }
-
-  return merged;
-}
-
 export async function getNextSortOrder(): Promise<number> {
   const { data, error } = await getSupabaseAdmin()
     .from("lab_parameters")
@@ -160,9 +181,16 @@ export async function getNextSortOrder(): Promise<number> {
     .limit(1)
     .maybeSingle();
 
-  if (error) throw error;
-  return (data?.sort_order ?? 0) + 1;
+  if (error) {
+    if (isMissingParametersTable(error)) {
+      return LEGACY_MAX_SORT + 1;
+    }
+    throw error;
+  }
+  return (data?.sort_order ?? LEGACY_MAX_SORT) + 1;
 }
+
+const LEGACY_MAX_SORT = 13;
 
 export async function findActiveNameConflict(
   normalizedName: string,
@@ -175,11 +203,41 @@ export async function findActiveNameConflict(
     )
     .eq("name_normalized", normalizedName)
     .is("deleted_at", null)
-    .lte("effective_from", effectiveFrom)
-    .or(`effective_to.is.null,effective_to.gt.${effectiveFrom}`)
-    .limit(1)
-    .maybeSingle();
+    .limit(20);
 
-  if (error) throw error;
-  return (data as LabParameterRow) || null;
+  if (error) {
+    if (isMissingParametersTable(error)) {
+      const legacy = findLegacyByName(normalizedName);
+      if (legacy) {
+        return {
+          id: legacy.id,
+          name: legacy.name,
+          name_normalized: normalizedName,
+          sort_order: legacy.sortOrder,
+          effective_from: "2000-01-01",
+          effective_to: null,
+          deleted_at: null,
+        };
+      }
+      return null;
+    }
+    throw error;
+  }
+
+  const rows = (data || []) as LabParameterRow[];
+  for (const row of rows) {
+    const year = parseInt(effectiveFrom.slice(0, 4), 10);
+    const month = parseInt(effectiveFrom.slice(5, 7), 10) - 1;
+    if (
+      isParameterEffectiveForMonth(
+        row.effective_from,
+        row.effective_to,
+        year,
+        month
+      )
+    ) {
+      return row;
+    }
+  }
+  return null;
 }

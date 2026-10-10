@@ -3,7 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 import type { RowsJson } from "@/lib/rows";
-import { fetchParametersByIds } from "@/lib/parameters";
+import { fetchParametersByIds, resolveParametersForSheet } from "@/lib/parameters";
+import {
+  applyParameterUpdatesToStored,
+  countNonEmptyCells,
+  countNonEmptyInParameterPayload,
+} from "@/lib/sheet-normalize";
 
 /**
  * PUT /api/sheet/:id
@@ -39,10 +44,40 @@ export async function PUT(
 
     if (fetchError) throw fetchError;
 
-    const mergedRows: RowsJson = { ...(oldSheet.rows || {}) };
-    for (const [parameterId, values] of Object.entries(rows)) {
-      mergedRows[parameterId] = values;
+    const parameters = await resolveParametersForSheet(
+      oldSheet.year,
+      oldSheet.month,
+      oldSheet.rows || {}
+    );
+
+    const existingNonEmpty = countNonEmptyCells(oldSheet.rows);
+    const incomingNonEmpty = countNonEmptyInParameterPayload(rows, parameters);
+
+    if (parameters.length === 0 && existingNonEmpty > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Parametre listesi yüklenemedi. Mevcut veriler korunuyor; kayıt reddedildi.",
+        },
+        { status: 409 }
+      );
     }
+
+    if (existingNonEmpty > 0 && incomingNonEmpty === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Boş veri gönderildi. Mevcut dolu kayıtların üzerine yazılmadı.",
+        },
+        { status: 409 }
+      );
+    }
+
+    const mergedRows = applyParameterUpdatesToStored(
+      oldSheet.rows || {},
+      rows,
+      parameters
+    );
 
     const changes = await detectChanges(oldSheet.rows || {}, mergedRows);
 

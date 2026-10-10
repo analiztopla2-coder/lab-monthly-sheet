@@ -5,9 +5,12 @@ import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { getDaysInMonth } from "@/lib/rows";
 import {
   buildEmptyRows,
-  mergeRowsForParameters,
   resolveParametersForSheet,
 } from "@/lib/parameters";
+import {
+  countNonEmptyCells,
+  mergeRowsForParameters,
+} from "@/lib/sheet-normalize";
 
 /**
  * GET /api/sheet?year=2025&month=9
@@ -48,6 +51,15 @@ export async function GET(request: NextRequest) {
 
     if (!sheet) {
       const parameters = await resolveParametersForSheet(year, month, {});
+      if (parameters.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Parametre listesi yüklenemedi. Veri güvenliği nedeniyle işlem durduruldu.",
+          },
+          { status: 503 }
+        );
+      }
       const rows = buildEmptyRows(
         parameters.map((p) => p.id),
         days
@@ -93,6 +105,18 @@ export async function GET(request: NextRequest) {
       month,
       sheet.rows || {}
     );
+
+    const storedNonEmpty = countNonEmptyCells(sheet.rows);
+    if (parameters.length === 0 && storedNonEmpty > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Parametre listesi çözümlenemedi. Mevcut kayıtlı veriler korunuyor.",
+        },
+        { status: 503 }
+      );
+    }
+
     const mergedRows = mergeRowsForParameters(
       sheet.rows || {},
       parameters,
@@ -165,6 +189,15 @@ export async function POST(request: NextRequest) {
 
     const days = getDaysInMonth(year, month);
     const parameters = await resolveParametersForSheet(year, month, {});
+    if (parameters.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Parametre listesi yüklenemedi. Veri güvenliği nedeniyle işlem durduruldu.",
+        },
+        { status: 503 }
+      );
+    }
     const rows = buildEmptyRows(
       parameters.map((p) => p.id),
       days
