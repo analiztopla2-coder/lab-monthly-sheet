@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import MonthTable from "./components/MonthTable";
+import ParameterReorderModal from "./components/ParameterReorderModal";
 import { Button } from "./components/ui/button";
 import { Select } from "./components/ui/select";
 import { Input } from "./components/ui/input";
@@ -48,6 +49,7 @@ export default function DashboardPage() {
   const [parameterActionError, setParameterActionError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<LabParameter | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [showReorderParameters, setShowReorderParameters] = useState(false);
 
   const monthNames = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -457,6 +459,13 @@ export default function DashboardPage() {
             {isAdmin && (
               <>
                 <Button
+                  onClick={() => setShowReorderParameters(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  Satırları Sırala
+                </Button>
+                <Button
                   onClick={() => {
                     setParameterActionError("");
                     setShowAddParameter(true);
@@ -555,6 +564,15 @@ export default function DashboardPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ParameterReorderModal
+        open={showReorderParameters}
+        onOpenChange={setShowReorderParameters}
+        parameters={parameters}
+        year={currentYear}
+        month={currentMonth}
+        onSaved={(next) => setParameters(next)}
+      />
 
       {/* Parametre Ekle Modal */}
       <Dialog open={showAddParameter} onOpenChange={setShowAddParameter}>

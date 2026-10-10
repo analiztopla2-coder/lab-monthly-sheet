@@ -70,7 +70,8 @@ export async function fetchParametersEffectiveForMonth(
     )
     .lte("effective_from", periodEnd)
     .is("deleted_at", null)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) {
     if (isMissingParametersTable(error)) {
@@ -99,7 +100,8 @@ export async function fetchParametersByIds(
       "id, name, name_normalized, sort_order, effective_from, effective_to, deleted_at"
     )
     .in("id", ids)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) {
     if (isMissingParametersTable(error)) {
@@ -158,7 +160,10 @@ export async function resolveParametersForSheet(
   }
 
   return Array.from(byId.values())
-    .sort((a, b) => a.sort_order - b.sort_order)
+    .sort((a, b) => {
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+      return a.id.localeCompare(b.id);
+    })
     .map((p) => toApiParameter(p));
 }
 
