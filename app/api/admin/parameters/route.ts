@@ -93,7 +93,22 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("POST /api/admin/parameters error:", error);
-    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+    const err = error as { code?: string; message?: string };
+    console.error("POST /api/admin/parameters error:", err?.message || error);
+
+    if (err?.code === "PGRST205" || err?.message?.includes("lab_parameters")) {
+      return NextResponse.json(
+        {
+          error:
+            "Parametre kaydı veritabanında hazır değil. Lütfen yöneticiye bildirin.",
+        },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Parametre eklenirken sunucu hatası oluştu." },
+      { status: 500 }
+    );
   }
 }
