@@ -2,7 +2,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
-import { emptyMonth, getDaysInMonth } from "@/lib/rows";
+import { getDaysInMonth } from "@/lib/rows";
+import {
+  buildEmptyRows,
+  mergeRowsForParameters,
+  resolveParametersForSheet,
+} from "@/lib/parameters";
 
 /**
  * GET /api/sheet?year=2025&month=9
@@ -10,7 +15,6 @@ import { emptyMonth, getDaysInMonth } from "@/lib/rows";
  */
 export async function GET(request: NextRequest) {
   try {
-    // JWT doğrula
     const sessionCookie = request.cookies.get("session");
     if (!sessionCookie) {
       return NextResponse.json({ error: "Oturum bulunamadı" }, { status: 401 });
@@ -29,7 +33,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Geçersiz yıl/ay" }, { status: 400 });
     }
 
-    // Sheet'i bul
+    const days = getDaysInMonth(year, month);
+
     const { data: sheet, error } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .select("*")
@@ -41,10 +46,12 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
-    // Yoksa oluştur
     if (!sheet) {
-      const days = getDaysInMonth(year, month);
-      const rows = emptyMonth(days);
+      const parameters = await resolveParametersForSheet(year, month, {});
+      const rows = buildEmptyRows(
+        parameters.map((p) => p.id),
+        days
+      );
 
       const { data: newSheet, error: insertError } = await getSupabaseAdmin()
         .from("monthly_sheets")
@@ -59,13 +66,13 @@ export async function GET(request: NextRequest) {
 
       if (insertError) throw insertError;
 
-      // Activity log - sheet oluşturma
       const { logActivity } = await import("@/lib/activity-logger");
-      const ipAddress = request.headers.get("x-forwarded-for") || 
-                       request.headers.get("x-real-ip") || 
-                       "unknown";
+      const ipAddress =
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown";
       const userAgent = request.headers.get("user-agent") || "unknown";
-      
+
       await logActivity({
         userId: payload.userId,
         username: payload.username,
@@ -75,16 +82,31 @@ export async function GET(request: NextRequest) {
         userAgent,
       });
 
-      return NextResponse.json({ sheet: newSheet }, { status: 200 });
+      return NextResponse.json(
+        { sheet: newSheet, parameters },
+        { status: 200 }
+      );
     }
 
-    // Activity log - sheet görüntüleme
+    const parameters = await resolveParametersForSheet(
+      year,
+      month,
+      sheet.rows || {}
+    );
+    const mergedRows = mergeRowsForParameters(
+      sheet.rows || {},
+      parameters,
+      days
+    );
+    const sheetWithMerged = { ...sheet, rows: mergedRows };
+
     const { logActivity } = await import("@/lib/activity-logger");
-    const ipAddress = request.headers.get("x-forwarded-for") || 
-                     request.headers.get("x-real-ip") || 
-                     "unknown";
+    const ipAddress =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
-    
+
     await logActivity({
       userId: payload.userId,
       username: payload.username,
@@ -94,7 +116,10 @@ export async function GET(request: NextRequest) {
       userAgent,
     });
 
-    return NextResponse.json({ sheet }, { status: 200 });
+    return NextResponse.json(
+      { sheet: sheetWithMerged, parameters },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Get sheet error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
@@ -124,7 +149,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Geçersiz yıl/ay" }, { status: 400 });
     }
 
-    // Zaten var mı kontrol et
     const { data: existing } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .select("*")
@@ -139,9 +163,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Yeni sheet oluştur
     const days = getDaysInMonth(year, month);
-    const rows = emptyMonth(days);
+    const parameters = await resolveParametersForSheet(year, month, {});
+    const rows = buildEmptyRows(
+      parameters.map((p) => p.id),
+      days
+    );
 
     const { data: newSheet, error: insertError } = await getSupabaseAdmin()
       .from("monthly_sheets")
@@ -156,13 +183,13 @@ export async function POST(request: NextRequest) {
 
     if (insertError) throw insertError;
 
-    // Activity log - POST ile sheet oluşturma
     const { logActivity } = await import("@/lib/activity-logger");
-    const ipAddress = request.headers.get("x-forwarded-for") || 
-                     request.headers.get("x-real-ip") || 
-                     "unknown";
+    const ipAddress =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
-    
+
     await logActivity({
       userId: payload.userId,
       username: payload.username,
@@ -172,7 +199,10 @@ export async function POST(request: NextRequest) {
       userAgent,
     });
 
-    return NextResponse.json({ sheet: newSheet }, { status: 201 });
+    return NextResponse.json(
+      { sheet: newSheet, parameters },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Create sheet error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });

@@ -8,7 +8,8 @@ import { Button } from "./components/ui/button";
 import { Select } from "./components/ui/select";
 import { Input } from "./components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./components/ui/dialog";
-import { ROW_LABELS, RowsJson, getDaysInMonth } from "@/lib/rows";
+import { RowsJson, getDaysInMonth } from "@/lib/rows";
+import type { LabParameter } from "@/lib/parameter-types";
 import * as XLSX from "xlsx";
 
 interface Sheet {
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [rows, setRows] = useState<RowsJson>({});
+  const [parameters, setParameters] = useState<LabParameter[]>([]);
   const [days, setDays] = useState(31);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,6 +40,13 @@ export default function DashboardPage() {
   // Geçmiş modal
   const [showHistory, setShowHistory] = useState(false);
   const [historySheets, setHistorySheets] = useState<Sheet[]>([]);
+
+  // Parametre ekle / sil (admin)
+  const [showAddParameter, setShowAddParameter] = useState(false);
+  const [newParameterName, setNewParameterName] = useState("");
+  const [parameterActionLoading, setParameterActionLoading] = useState(false);
+  const [parameterActionError, setParameterActionError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<LabParameter | null>(null);
 
   const monthNames = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -54,6 +63,7 @@ export default function DashboardPage() {
       if (res.ok && data.sheet) {
         setSheet(data.sheet);
         setRows(data.sheet.rows);
+        setParameters(data.parameters || []);
         setDays(getDaysInMonth(year, month));
       }
     } catch (error) {
@@ -83,18 +93,88 @@ export default function DashboardPage() {
   };
 
   // Hücre değiştir
-  const handleCellChange = (rowLabel: string, dayIndex: number, value: string) => {
+  const handleCellChange = (parameterId: string, dayIndex: number, value: string) => {
     setRows((prev) => {
       const newRows = { ...prev };
-      if (!newRows[rowLabel]) {
-        newRows[rowLabel] = Array(days).fill("");
+      if (!newRows[parameterId]) {
+        newRows[parameterId] = Array(days).fill("");
       }
-      // Yeni array oluştur (immutable update)
-      const updatedRow = [...(newRows[rowLabel] || [])];
+      const updatedRow = [...(newRows[parameterId] || [])];
       updatedRow[dayIndex] = value;
-      newRows[rowLabel] = updatedRow;
+      newRows[parameterId] = updatedRow;
       return newRows;
     });
+  };
+
+  const handleAddParameter = async () => {
+    const name = newParameterName.trim();
+    if (!name) {
+      setParameterActionError("Parametre adı gerekli");
+      return;
+    }
+
+    setParameterActionLoading(true);
+    setParameterActionError("");
+
+    try {
+      const res = await fetch("/api/admin/parameters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          year: currentYear,
+          month: currentMonth,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setParameterActionError(data.error || "Parametre eklenemedi");
+        return;
+      }
+
+      const param = data.parameter as LabParameter;
+      setParameters((prev) =>
+        [...prev, param].sort((a, b) => a.sortOrder - b.sortOrder)
+      );
+      setRows((prev) => ({
+        ...prev,
+        [param.id]: Array(days).fill(""),
+      }));
+      setNewParameterName("");
+      setShowAddParameter(false);
+    } catch {
+      setParameterActionError("Sunucu hatası");
+    } finally {
+      setParameterActionLoading(false);
+    }
+  };
+
+  const handleConfirmDeleteParameter = async () => {
+    if (!deleteTarget) return;
+
+    setParameterActionLoading(true);
+    setParameterActionError("");
+
+    try {
+      const res = await fetch(
+        `/api/admin/parameters/${deleteTarget.id}?year=${currentYear}&month=${currentMonth}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        setParameterActionError(data.error || "Parametre kaldırılamadı");
+        return;
+      }
+
+      setParameters((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch {
+      setParameterActionError("Sunucu hatası");
+    } finally {
+      setParameterActionLoading(false);
+    }
   };
 
   // Kaydet
@@ -222,9 +302,9 @@ export default function DashboardPage() {
     data.push(headerRow);
 
     // Her satır için veri
-    ROW_LABELS.forEach((label) => {
-      const row = [label];
-      const values = rows[label] || [];
+    parameters.forEach((param) => {
+      const row = [param.name];
+      const values = rows[param.id] || [];
       for (let i = 0; i < days; i++) {
         row.push(values[i] || "");
       }
@@ -345,13 +425,25 @@ export default function DashboardPage() {
             </Button>
 
             {isAdmin && (
-              <Button 
-                onClick={() => router.push('/admin/users')} 
-                variant="outline" 
-                size="sm"
-              >
-                👤 Kullanıcılar
-              </Button>
+              <>
+                <Button
+                  onClick={() => {
+                    setParameterActionError("");
+                    setShowAddParameter(true);
+                  }}
+                  variant="secondary"
+                  size="sm"
+                >
+                  + Satır Ekle
+                </Button>
+                <Button
+                  onClick={() => router.push("/admin/users")}
+                  variant="outline"
+                  size="sm"
+                >
+                  👤 Kullanıcılar
+                </Button>
+              </>
             )}
 
             {username && (
@@ -382,7 +474,14 @@ export default function DashboardPage() {
 
       {/* Tablo */}
       <main className="container mx-auto px-4 py-6 print:px-0 print:py-2">
-        <MonthTable rows={rows} days={days} onChange={handleCellChange} />
+        <MonthTable
+          parameters={parameters}
+          rows={rows}
+          days={days}
+          isAdmin={isAdmin}
+          onChange={handleCellChange}
+          onDeleteParameter={isAdmin ? (p) => setDeleteTarget(p) : undefined}
+        />
       </main>
 
       {/* Geçmiş Modal */}
@@ -415,6 +514,90 @@ export default function DashboardPage() {
                 ))}
               </ul>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Parametre Ekle Modal */}
+      <Dialog open={showAddParameter} onOpenChange={setShowAddParameter}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Parametre Ekle</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Parametre Adı</label>
+              <Input
+                value={newParameterName}
+                onChange={(e) => setNewParameterName(e.target.value)}
+                placeholder="Örn: OPTİK BEYAZLIK"
+                disabled={parameterActionLoading}
+              />
+            </div>
+            {parameterActionError && (
+              <p className="text-sm text-red-600">{parameterActionError}</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                disabled={parameterActionLoading}
+                onClick={() => {
+                  setShowAddParameter(false);
+                  setNewParameterName("");
+                  setParameterActionError("");
+                }}
+              >
+                İptal
+              </Button>
+              <Button
+                onClick={handleAddParameter}
+                disabled={parameterActionLoading}
+              >
+                {parameterActionLoading ? "Kaydediliyor..." : "Kaydet"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Parametre Sil Onay */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+            setParameterActionError("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Parametreyi Kaldır</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600">
+            <strong>{deleteTarget?.name}</strong> parametresini kaldırmak istediğinize emin misiniz?
+            <br />
+            <br />
+            Bu işlem geçmiş kayıtları silmez. Parametre bu dönemden itibaren tabloda gösterilmeyecektir.
+          </p>
+          {parameterActionError && (
+            <p className="text-sm text-red-600">{parameterActionError}</p>
+          )}
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              disabled={parameterActionLoading}
+              onClick={() => setDeleteTarget(null)}
+            >
+              İptal
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={parameterActionLoading}
+              onClick={handleConfirmDeleteParameter}
+            >
+              {parameterActionLoading ? "Kaldırılıyor..." : "Kaldır"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

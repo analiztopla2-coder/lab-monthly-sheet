@@ -1,23 +1,35 @@
 // app/components/MonthTable.tsx
 "use client";
 
-import { ROW_LABELS, RowsJson } from "@/lib/rows";
+import type { LabParameter } from "@/lib/parameter-types";
+import type { RowsJson } from "@/lib/rows";
 import { useState } from "react";
 
 interface MonthTableProps {
+  parameters: LabParameter[];
   rows: RowsJson;
   days: number;
-  onChange: (rowLabel: string, dayIndex: number, value: string) => void;
+  isAdmin: boolean;
+  onChange: (parameterId: string, dayIndex: number, value: string) => void;
+  onDeleteParameter?: (parameter: LabParameter) => void;
 }
 
-export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
+export default function MonthTable({
+  parameters,
+  rows,
+  days,
+  isAdmin,
+  onChange,
+  onDeleteParameter,
+}: MonthTableProps) {
   const dayHeaders = Array.from({ length: days }, (_, i) => i + 1);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
+  const rowCount = parameters.length;
 
   return (
     <div className="overflow-auto print:overflow-visible">
-      <table className="w-full border-collapse" role="grid" style={{ tableLayout: 'auto' }}>
+      <table className="w-full border-collapse" role="grid" style={{ tableLayout: "auto" }}>
         <thead>
           <tr>
             <th className="sticky left-0 top-0 z-20 bg-slate-700 text-white border-2 border-slate-600 p-3 min-w-[200px] font-bold text-sm">
@@ -31,8 +43,8 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
                 className={`
                   sticky top-0 z-10 text-white p-2.5 min-w-[70px] max-w-[200px] w-auto font-semibold text-sm
                   border-2 border-slate-600
-                  ${day % 5 === 0 ? 'bg-indigo-600' : 'bg-slate-600'}
-                  ${hoveredCol === day - 1 ? 'bg-blue-500 shadow-lg' : ''}
+                  ${day % 5 === 0 ? "bg-indigo-600" : "bg-slate-600"}
+                  ${hoveredCol === day - 1 ? "bg-blue-500 shadow-lg" : ""}
                   transition-all duration-150
                 `}
               >
@@ -42,45 +54,58 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
           </tr>
         </thead>
         <tbody>
-          {ROW_LABELS.map((label, rowIndex) => (
-            <tr 
-              key={label}
+          {parameters.map((parameter, rowIndex) => (
+            <tr
+              key={parameter.id}
               onMouseEnter={() => setHoveredRow(rowIndex)}
               onMouseLeave={() => setHoveredRow(null)}
             >
-              <td 
+              <td
                 className={`
                   sticky left-0 z-10 
                   border-2 border-slate-300
                   p-3 font-semibold text-sm
-                  ${rowIndex % 2 === 0 ? 'bg-slate-50 text-slate-800' : 'bg-white text-slate-700'}
-                  ${hoveredRow === rowIndex ? 'bg-blue-100 text-blue-900' : ''}
+                  ${rowIndex % 2 === 0 ? "bg-slate-50 text-slate-800" : "bg-white text-slate-700"}
+                  ${hoveredRow === rowIndex ? "bg-blue-100 text-blue-900" : ""}
                   transition-colors duration-150
                 `}
               >
-                {label}
+                <div className="flex items-center justify-between gap-2">
+                  <span>{parameter.name}</span>
+                  {isAdmin && onDeleteParameter && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteParameter(parameter)}
+                      className="print:hidden text-slate-400 hover:text-red-600 p-1 rounded"
+                      title="Parametreyi kaldır"
+                      aria-label={`${parameter.name} parametresini kaldır`}
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
               </td>
-              
+
               {dayHeaders.map((day, dayIndex) => (
-                <td 
-                  key={`${label}-${day}`} 
+                <td
+                  key={`${parameter.id}-${day}`}
                   className={`
                     p-0
                     border border-slate-200
-                    ${day % 5 === 0 ? 'border-r-2 border-r-indigo-300' : ''}
-                    ${(rowIndex + 1) % 5 === 0 ? 'border-b-2 border-b-indigo-200' : ''}
-                    ${hoveredRow === rowIndex ? 'bg-blue-50' : rowIndex % 2 === 0 ? 'bg-slate-50/30' : 'bg-white'}
-                    ${hoveredCol === dayIndex ? 'bg-blue-50' : ''}
-                    ${hoveredRow === rowIndex && hoveredCol === dayIndex ? 'bg-blue-100' : ''}
+                    ${day % 5 === 0 ? "border-r-2 border-r-indigo-300" : ""}
+                    ${(rowIndex + 1) % 5 === 0 ? "border-b-2 border-b-indigo-200" : ""}
+                    ${hoveredRow === rowIndex ? "bg-blue-50" : rowIndex % 2 === 0 ? "bg-slate-50/30" : "bg-white"}
+                    ${hoveredCol === dayIndex ? "bg-blue-50" : ""}
+                    ${hoveredRow === rowIndex && hoveredCol === dayIndex ? "bg-blue-100" : ""}
                     transition-colors duration-150
                   `}
                 >
                   <input
                     type="text"
                     inputMode="decimal"
-                    value={rows[label]?.[dayIndex] || ""}
+                    value={rows[parameter.id]?.[dayIndex] || ""}
                     onChange={(e) => {
-                      onChange(label, dayIndex, e.target.value);
+                      onChange(parameter.id, dayIndex, e.target.value);
                     }}
                     onFocus={() => {
                       setHoveredRow(rowIndex);
@@ -92,31 +117,22 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
                       let nextRow = currentRow;
                       let nextCol = currentCol;
 
-                      // Enter veya Aşağı ok: bir satır aşağı
-                      if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                      if (e.key === "Enter" || e.key === "ArrowDown") {
                         e.preventDefault();
-                        nextRow = Math.min(currentRow + 1, ROW_LABELS.length - 1);
-                      }
-                      // Yukarı ok: bir satır yukarı
-                      else if (e.key === 'ArrowUp') {
+                        nextRow = Math.min(currentRow + 1, rowCount - 1);
+                      } else if (e.key === "ArrowUp") {
                         e.preventDefault();
                         nextRow = Math.max(currentRow - 1, 0);
-                      }
-                      // Tab veya Sağ ok: bir kolon sağa
-                      else if (e.key === 'Tab' || e.key === 'ArrowRight') {
+                      } else if (e.key === "Tab" || e.key === "ArrowRight") {
                         e.preventDefault();
                         nextCol = Math.min(currentCol + 1, days - 1);
-                      }
-                      // Shift+Tab veya Sol ok: bir kolon sola
-                      else if ((e.key === 'Tab' && e.shiftKey) || e.key === 'ArrowLeft') {
+                      } else if ((e.key === "Tab" && e.shiftKey) || e.key === "ArrowLeft") {
                         e.preventDefault();
                         nextCol = Math.max(currentCol - 1, 0);
-                      }
-                      else {
-                        return; // Diğer tuşlar için normal davranış
+                      } else {
+                        return;
                       }
 
-                      // Bir sonraki hücreyi seç
                       const nextInput = document.querySelector(
                         `input[data-row="${nextRow}"][data-col="${nextCol}"]`
                       ) as HTMLInputElement;
@@ -133,7 +149,7 @@ export default function MonthTable({ rows, days, onChange }: MonthTableProps) {
                       bg-transparent font-medium text-sm text-center
                       border-0
                     `}
-                    style={{ minWidth: '70px' }}
+                    style={{ minWidth: "70px" }}
                   />
                 </td>
               ))}

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Oturum bulunamadı" }, { status: 401 });
     }
 
-    const payload = verifyToken(sessionCookie.value);
+    const payload = await verifyToken(sessionCookie.value);
     if (!payload) {
       return NextResponse.json({ error: "Geçersiz oturum" }, { status: 401 });
     }

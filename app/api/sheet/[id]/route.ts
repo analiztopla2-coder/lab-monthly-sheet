@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
+import type { RowsJson } from "@/lib/rows";
+import { fetchParametersByIds } from "@/lib/parameters";
 
 /**
  * PUT /api/sheet/:id
@@ -23,13 +25,12 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { rows } = body;
+    const { rows } = body as { rows?: RowsJson };
 
     if (!rows) {
       return NextResponse.json({ error: "rows verisi gerekli" }, { status: 400 });
     }
 
-    // Eski sheet'i al (karşılaştırma için)
     const { data: oldSheet, error: fetchError } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .select("*")
@@ -38,14 +39,17 @@ export async function PUT(
 
     if (fetchError) throw fetchError;
 
-    // Değişiklikleri tespit et
-    const changes = detectChanges(oldSheet.rows, rows);
+    const mergedRows: RowsJson = { ...(oldSheet.rows || {}) };
+    for (const [parameterId, values] of Object.entries(rows)) {
+      mergedRows[parameterId] = values;
+    }
 
-    // Sheet'i güncelle
+    const changes = await detectChanges(oldSheet.rows || {}, mergedRows);
+
     const { data: updated, error } = await getSupabaseAdmin()
       .from("monthly_sheets")
       .update({
-        rows,
+        rows: mergedRows,
         updated_at: new Date().toISOString(),
       })
       .eq("id", params.id)
@@ -54,16 +58,15 @@ export async function PUT(
 
     if (error) throw error;
 
-    // Activity log (detaylı)
     if (changes.length > 0) {
       const { logActivity } = await import("@/lib/activity-logger");
-      
-      // IP ve User-Agent al
-      const ipAddress = request.headers.get("x-forwarded-for") || 
-                       request.headers.get("x-real-ip") || 
-                       "unknown";
+
+      const ipAddress =
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown";
       const userAgent = request.headers.get("user-agent") || "unknown";
-      
+
       for (const change of changes) {
         await logActivity({
           userId: payload.userId as string,
@@ -83,10 +86,17 @@ export async function PUT(
   }
 }
 
-/**
- * İki rows objesi arasındaki değişiklikleri tespit eder
- */
-function detectChanges(oldRows: any, newRows: any) {
+async function resolveParameterLabel(
+  parameterKey: string,
+  nameById: Map<string, string>
+): Promise<string> {
+  if (nameById.has(parameterKey)) {
+    return nameById.get(parameterKey)!;
+  }
+  return parameterKey;
+}
+
+async function detectChanges(oldRows: RowsJson, newRows: RowsJson) {
   const changes: Array<{
     parameter: string;
     day: number;
@@ -94,21 +104,34 @@ function detectChanges(oldRows: any, newRows: any) {
     newValue: string;
   }> = [];
 
-  // Her parametre için kontrol
-  for (const parameter in newRows) {
+  const ids = new Set<string>();
+  for (const key of Object.keys(oldRows)) ids.add(key);
+  for (const key of Object.keys(newRows)) ids.add(key);
+
+  const uuidIds = [...ids].filter((k) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(k)
+  );
+  const nameById = new Map<string, string>();
+  if (uuidIds.length > 0) {
+    const params = await fetchParametersByIds(uuidIds);
+    for (const p of params) {
+      nameById.set(p.id, p.name);
+    }
+  }
+
+  for (const parameter of Object.keys(newRows)) {
     const oldValues = oldRows[parameter] || [];
     const newValues = newRows[parameter] || [];
+    const label = await resolveParameterLabel(parameter, nameById);
 
-    // Her gün için karşılaştır
     for (let dayIndex = 0; dayIndex < newValues.length; dayIndex++) {
       const oldValue = oldValues[dayIndex] || "";
       const newValue = newValues[dayIndex] || "";
 
-      // Değişiklik varsa kaydet
       if (oldValue !== newValue) {
         changes.push({
-          parameter,
-          day: dayIndex + 1, // Gün numarası 1'den başlar
+          parameter: label,
+          day: dayIndex + 1,
           oldValue: oldValue || "(boş)",
           newValue: newValue || "(boş)",
         });
